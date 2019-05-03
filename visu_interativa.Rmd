@@ -1,0 +1,76 @@
+---
+title: "vizu_interativa"
+output: 
+    flexdashboard::flex_dashboard:
+        storyboard: true
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(viridis)
+library(plotly)
+#library(hrbrthemes)
+#theme_set(theme_ipsum())
+
+respostas = read_csv(here::here("data/enade-ufcg-2017.csv"),
+                     col_types = "cccdccdddc")
+
+cursos = respostas %>% 
+    group_by(UF) %>% 
+    summarise(n = n(), 
+              media = mean(media))
+
+criterios = respostas %>% 
+    group_by(UF, categoria) %>% 
+    summarise(media = mean(media))
+```
+
+### Parte 1
+
+```{r}
+respostas %>%
+    filter(categoria != "Outros") %>%
+    mutate(Categoria = str_glue("{categoria}\nMédia: {media}")) %>% 
+    ggplot(aes(
+        x = reorder(categoria, media),
+        y = reorder(NOME_CURSO, media),
+        fill = media, 
+        label = Categoria
+    )) +
+    geom_tile() +
+    labs(
+    x = "Categoria",
+    y = "Curso",
+    title = "Cursos e suas respectivas médias nas categorias avaliadas",
+    subtitle = "Quadrados indicam a média do curso para cada categoria"
+) +
+    scale_fill_viridis() + 
+    theme(legend.position = "bottom")
+```
+
+***
+Nessa análise vemos a avaliação dos cursos da UFCG em relação a cada categoria estabelecida pelo ENADE em 2017. As categorias são:
+infraestrutura; 
+curso em geral; 
+ensino, apoio e avaliação; 
+aprendizagem além do técnico. 
+Vemos que algumas categorias foram, de maneira geral, mais bem avaliadas, enquanto outras menos bem avaliadas, como aparendizagem além do técnico e infraestrutura, respectivamente.
+
+### Parte 2
+
+```{r}
+p = respostas %>% 
+    mutate(Formandos = str_glue("{n}\n Tema: {tema}")) %>% 
+    ggplot(aes(x = n, y = reorder(NOME_CURSO, n), label = Formandos)) + 
+    geom_point() +
+    scale_x_log10() +
+    labs(x = "Número de formandos",
+         y = "Curso",
+         title = "Número de formandos e quantidade respectiva de respostas aos temas",
+         subtitle = "Pontos indicam a quantidade e categoria")
+ggplotly(p, tooltip = "label")
+```
+
+***
+Nessa visualização temos a checagem de informções de forma mais clara e eficaz. No caso, a quantidade de formandos e o tema de cada pergunta nas quais votaram nos é informado a medida em que interagimos com os pontos do gráfico e assim podemos comparar a quantidade de formandos com as avaliações de cada categoria da visualização anterior. 
